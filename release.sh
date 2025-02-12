@@ -36,6 +36,17 @@ else
 fi
 export pkg_version="$current_version"
 
+# Get to the current directory
+current_dir="$(dirname "$(realpath "$0")")"
+source "${current_dir}/platform.sh"
+source "${current_dir}/build.sh"
+
+# Construct executable and archive names
+os_specific_binary
+
+echo "Executable: $executable"
+echo "Archive: $archive"
+
 if [ "$release" = false ]; then
     exit 0
 fi
@@ -69,14 +80,3 @@ if [ "$release_id" = "null" ] || [ -z "$release_id" ]; then
 fi
 echo "Release ID: $release_id"
 export "release_id=$release_id"
-
-# Get to the current directory
-current_dir="$(dirname "$(realpath "$0")")"
-source "${current_dir}/platform.sh"
-source "${current_dir}/build.sh"
-
-# Construct executable and archive names
-os_specific_binary
-
-echo "Executable: $executable"
-echo "Archive: $archive"

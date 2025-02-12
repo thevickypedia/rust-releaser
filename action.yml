@@ -10,16 +10,6 @@ runs:
         echo "Operating System: ${{ runner.os }}"
         echo "Architecture: ${{ runner.arch }}"
       shell: bash
-    - name: Set Path
-      run: |
-        if [ "${{ runner.os }}" == "Windows" ]; then
-          chmod +x "${{ github.action_path }}\release.sh"
-          echo "release_sh=${{ github.action_path }}\release.sh" >> $GITHUB_ENV
-        else
-          chmod +x "${{ github.action_path }}/release.sh"
-          echo "release_sh=${{ github.action_path }}/release.sh" >> $GITHUB_ENV
-        fi
-      shell: bash
     - name: Create Release
       run: ./release.sh
       shell: bash
