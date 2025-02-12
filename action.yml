@@ -13,8 +13,8 @@ runs:
     - name: Set Path
       run: |
         if [ "${{ runner.os }}" == "Windows" ]; then
-          chmod +x "${{ github.action_path }}\\release.sh"
-          echo "release_sh=${{ github.action_path }}\\release.sh" >> $GITHUB_ENV
+          chmod +x "${{ github.action_path }}\release.sh"
+          echo "release_sh=${{ github.action_path }}\release.sh" >> $GITHUB_ENV
         else
           chmod +x "${{ github.action_path }}/release.sh"
           echo "release_sh=${{ github.action_path }}/release.sh" >> $GITHUB_ENV
