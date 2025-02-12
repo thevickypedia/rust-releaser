@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# 'set -e' stops the execution of a script if a command or pipeline has an error.
-# This is the opposite of the default shell behaviour, which is to ignore errors in scripts.
 set -e
 
 # Get package information
@@ -35,11 +33,19 @@ else
 fi
 export pkg_version="$current_version"
 
+# Get to the current directory
+current_dir="$(dirname "$(realpath "$0")")"
+source "${current_dir}/platform.sh"
+
+# Construct executable and archive names
+os_specific_binary
+
+echo "Executable: $executable"
+echo "Archive: $archive"
+
 if [ "$release" = false ]; then
     exit 0
 fi
-echo "Proceeding with release!!"
-exit
 
 # Create Release
 release_tag="v${pkg_version}"
@@ -54,13 +60,13 @@ for cargo_pre in "${cargo_prerelease[@]}"; do
 done
 
 echo "Release Tag: $release_tag"
-latest_tag=$(curl -s -L https://api.github.com/repos/${{ github.repository }}/releases/latest | jq -r .tag_name)
+latest_tag=$(curl -s -L https://api.github.com/repos/${repository}/releases/latest | jq -r .tag_name)
 commit_msg="$(git log -1 --pretty=%B | sed ':a;N;$!ba;s/\n/\\n/g')"
-commit_msg+="\n**Full Changelog**: ${{ github.server_url }}/${{ github.repository }}/compare/$latest_tag...$release_tag"
+commit_msg+="\n**Full Changelog**: ${server_url}/${repository}/compare/$latest_tag...$release_tag"
 release_data="{\"tag_name\":\"$release_tag\",\"name\":\"$release_tag\",\"body\":\"$commit_msg\",\"draft\":false,\"prerelease\":$prerelease}"
-response=$(curl -X POST -H "Authorization: token ${{ secrets.GIT_TOKEN }}" \
+response=$(curl -X POST -H "Authorization: token ${GIT_TOKEN}" \
     -d "$release_data" \
-    "https://api.github.com/repos/${{ github.repository }}/releases")
+    "https://api.github.com/repos/${repository}/releases")
 
 echo "Response: $response"
 release_id=$(echo $response | jq -r .id)
@@ -69,4 +75,4 @@ if [ "$release_id" = "null" ] || [ -z "$release_id" ]; then
     exit 1
 fi
 echo "Release ID: $release_id"
-echo "release_id=$release_id" >> "$GITHUB_OUTPUT"
+export "release_id=$release_id"

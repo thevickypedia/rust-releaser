@@ -1,0 +1,19 @@
+name: Build, Test and Upload Artifact
+description: Matrix releaser for Rust projects
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v4
+    - name: Create Release
+      run: |
+        chmod +x ${{ github.action_path }}/release.sh
+        ${{ github.action_path }}/release.sh
+      shell: bash
+      env:
+        repository: ${{ github.repository }}
+        server_url: ${{ github.server_url }}
+        GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+    - name: Build and upload artifact
+      run: build.sh
+      shell: bash
