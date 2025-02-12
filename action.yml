@@ -5,6 +5,11 @@ runs:
   using: composite
   steps:
     - uses: actions/checkout@v4
+    - name: Print Runner Information
+      run: |
+        echo "Operating System: ${{ runner.os }}"
+        echo "Architecture: ${{ runner.arch }}"
+      shell: bash
     - name: Create Release
       run: |
         chmod +x ${{ github.action_path }}/release.sh
@@ -15,5 +20,7 @@ runs:
         server_url: ${{ github.server_url }}
         GIT_TOKEN: ${{ env.GIT_TOKEN }}
     - name: Build and upload artifact
-      run: build.sh
+      run: |
+        chmod +x ${{ github.action_path }}/build.sh
+        ${{ github.action_path }}/build.sh
       shell: bash
