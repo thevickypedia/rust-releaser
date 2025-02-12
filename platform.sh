@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+# TODO: This whole script is redundant to runner.os and runner.arch
+#   For now its a nice to have, but clean up later
+
 # NOTE: `uname -m` is more accurate and universal than `arch`
 # See https://en.wikipedia.org/wiki/Uname
 

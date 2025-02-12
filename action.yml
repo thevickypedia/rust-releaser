@@ -10,17 +10,20 @@ runs:
         echo "Operating System: ${{ runner.os }}"
         echo "Architecture: ${{ runner.arch }}"
       shell: bash
-    - name: Create Release
+    - name: Set Path
       run: |
-        chmod +x ${{ github.action_path }}/release.sh
-        ${{ github.action_path }}/release.sh
+        if [ "${{ runner.os }}" == "Windows" ]; then
+          chmod +x "${{ github.action_path }}\\release.sh"
+          echo "release_sh=${{ github.action_path }}\\release.sh" >> $GITHUB_ENV
+        else
+          chmod +x "${{ github.action_path }}/release.sh"
+          echo "release_sh=${{ github.action_path }}/release.sh" >> $GITHUB_ENV
+        fi
+      shell: bash
+    - name: Create Release
+      run: "${{ env.release_sh }}"
       shell: bash
       env:
         repository: ${{ github.repository }}
         server_url: ${{ github.server_url }}
         GIT_TOKEN: ${{ env.GIT_TOKEN }}
-    - name: Build and upload artifact
-      run: |
-        chmod +x ${{ github.action_path }}/build.sh
-        ${{ github.action_path }}/build.sh
-      shell: bash
