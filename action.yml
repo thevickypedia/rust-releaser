@@ -11,7 +11,9 @@ runs:
         echo "Architecture: ${{ runner.arch }}"
       shell: bash
     - name: Create Release
-      run: ./release.sh
+      run: |
+        chmod +x "release.sh"
+        ./release.sh
       shell: bash
       working-directory: ${{ github.action_path }}
       env:
@@ -19,3 +21,4 @@ runs:
         server_url: ${{ github.server_url }}
         GIT_TOKEN: ${{ env.GIT_TOKEN }}
         WORKSPACE: ${{ github.workspace }}
+        ACTION_PATH: ${{ github.action_path }}

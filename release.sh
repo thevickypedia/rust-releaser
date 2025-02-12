@@ -37,9 +37,9 @@ fi
 export pkg_version="$current_version"
 
 # Get to the current directory
-current_dir="$(dirname "$(realpath "$0")")"
-source "${current_dir}/platform.sh"
-source "${current_dir}/build.sh"
+# current_dir="$(dirname "$(realpath "$0")")"
+source "${ACTION_PATH}/platform.sh"
+source "${ACTION_PATH}/build.sh"
 
 # Construct executable and archive names
 os_specific_binary
