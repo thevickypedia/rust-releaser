@@ -57,17 +57,23 @@ latest_tag=$(curl -s -L https://api.github.com/repos/${repository}/releases/late
 commit_msg="$(git log -1 --pretty=%B | sed ':a;N;$!ba;s/\n/\\n/g')"
 commit_msg+="\n**Full Changelog**: ${server_url}/${repository}/compare/$latest_tag...$release_tag"
 release_data="{\"tag_name\":\"$release_tag\",\"name\":\"$release_tag\",\"body\":\"$commit_msg\",\"draft\":false,\"prerelease\":$prerelease}"
-response=$(curl -X POST -H "Authorization: token ${GIT_TOKEN}" \
+existing_release=$(curl -s "https://api.github.com/repos/${repository}/releases/tags/${release_tag}")
+if [[ $(echo "$existing_release" | jq -r .message) != "Not Found" ]]; then
+  release_id=$(echo "$existing_release" | jq -r .id)
+  export release_id
+  echo "Release with tag $release_tag already exists. Release ID: $release_id"
+else
+  response=$(curl -X POST -H "Authorization: token ${GIT_TOKEN}" \
     -d "$release_data" \
     "https://api.github.com/repos/${repository}/releases")
-
-echo "Response: $response"
-release_id=$(echo $response | jq -r .id)
+  release_id=$(echo "$response" | jq -r .id)
+  export release_id
+  echo "New release created. Release ID: $release_id"
+fi
 if [ "$release_id" = "null" ] || [ -z "$release_id" ]; then
     echo "Error: release_id is null. Exiting with code 1."
     exit 1
 fi
-export "release_id=$release_id"
 
 # Get to the current directory
 # current_dir="$(dirname "$(realpath "$0")")"
