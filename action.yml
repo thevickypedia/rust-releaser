@@ -13,7 +13,7 @@ runs:
       env:
         repository: ${{ github.repository }}
         server_url: ${{ github.server_url }}
-        GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+        GIT_TOKEN: ${{ env.GIT_TOKEN }}
     - name: Build and upload artifact
       run: build.sh
       shell: bash
