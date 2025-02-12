@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+echo "Workspace: ${WORKSPACE}"
+cd "${WORKSPACE}"
+
 # Get package information
 pkg_name=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].name')
 echo "Package Name: $pkg_name"

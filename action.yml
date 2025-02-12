@@ -28,3 +28,4 @@ runs:
         repository: ${{ github.repository }}
         server_url: ${{ github.server_url }}
         GIT_TOKEN: ${{ env.GIT_TOKEN }}
+        WORKSPACE: ${{ github.workspace }}
