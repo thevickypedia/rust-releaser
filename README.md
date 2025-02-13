@@ -12,6 +12,6 @@ on:
 
 jobs:
   build:
-    uses: thevickypedia/rust-releaser/.github/workflows/releaser.yml@main
+    uses: thevickypedia/rust-releaser/.github/workflows/entrypoint.yml@main
     secrets: inherit
 ```
