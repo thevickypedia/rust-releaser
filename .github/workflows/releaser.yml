@@ -1,5 +1,6 @@
 name: Build, Test and Upload Artifact
 
+# https://docs.github.com/en/actions/sharing-automations/reusing-workflows#using-inputs-and-secrets-in-a-reusable-workflow
 on:
   workflow_call:
 
