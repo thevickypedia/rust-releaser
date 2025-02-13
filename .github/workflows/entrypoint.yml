@@ -10,8 +10,9 @@ env:
 jobs:
   release:
     runs-on: thevickypedia-lite
-    # permissions:
-    #   contents: write
+    permissions:
+      contents: write
+
     outputs:
       release-id: ${{ steps.create-release.outputs.release_id }}
       release-tag: ${{ steps.create-release.outputs.release_tag }}
@@ -123,8 +124,8 @@ jobs:
     name: Upload asset for ${{ matrix.platform.release_for }}
     if: needs.release.outputs.release-flag == 'true'
     runs-on: ${{ matrix.platform.os }}
-    # permissions:
-    #   contents: write
+    permissions:
+      contents: write
 
     steps:
       - name: Release ID Propagation
