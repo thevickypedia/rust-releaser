@@ -106,6 +106,11 @@ jobs:
             bin: ${{ needs.release.outputs.bin-name }}
             name: ${{ needs.release.outputs.pkg-name }}-Linux-x86_64.tar.gz
 
+          - release_for: Linux-ARM64
+            os: linux-arm64
+            bin: ${{ needs.release.outputs.bin-name }}
+            name: ${{ needs.release.outputs.pkg-name }}-Linux-arm64.tar.gz
+
           - release_for: Windows-x86_64
             os: windows-amd64
             bin: ${{ needs.release.outputs.bin-name }}.exe
