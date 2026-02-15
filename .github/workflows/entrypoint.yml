@@ -106,7 +106,7 @@ jobs:
             bin: ${{ needs.release.outputs.bin-name }}
             name: ${{ needs.release.outputs.pkg-name }}-Linux-x86_64.tar.gz
 
-          - release_for: Linux-ARM64
+          - release_for: Linux-arm64
             os: linux-arm64
             bin: ${{ needs.release.outputs.bin-name }}
             name: ${{ needs.release.outputs.pkg-name }}-Linux-arm64.tar.gz
@@ -182,26 +182,32 @@ jobs:
           vcpkg_dir: "C:\\Tools\\vcpkg"
 
       - name: Build
-        if: ${{ success() || failure() }}
+        if: always()
         run: |
           if [[ "${{ matrix.platform.os }}" =~ ^windows ]]; then
-            echo "Setting vcpkg env vars for OpenSSL in Windows"
-            export OPENSSL_DIR="${{ env.vcpkg_dir }}\installed\x64-windows-static"
-            export OPENSSL_STATIC="Yes"
-            export VCPKG_ROOT="${{ env.vcpkg_dir }}\installed\x64-windows-static"
+            if [[ -d "${{ env.vcpkg_dir }}/installed/x64-windows-static" ]]; then
+              echo "::notice title=vcpkg installed::Setting vcpkg env vars for OpenSSL in Windows"
+              export OPENSSL_DIR="${{ env.vcpkg_dir }}/installed/x64-windows-static"
+              export OPENSSL_STATIC="Yes"
+              export VCPKG_ROOT="${{ env.vcpkg_dir }}"
+            else
+              echo "::warning title=vcpkg not found::Missing OpenSSL Static, proceeding without it"
+            fi
           fi
           cargo build --release
         shell: bash
-        env:
-          vcpkg_dir: "C:\Tools\vcpkg"
 
       - name: Run tests
         run: |
           if [[ "${{ matrix.platform.os }}" =~ ^windows ]]; then
-            echo "Setting vcpkg env vars for OpenSSL in Windows"
-            export OPENSSL_DIR="${{ env.vcpkg_dir }}\installed\x64-windows-static"
-            export OPENSSL_STATIC="Yes"
-            export VCPKG_ROOT="${{ env.vcpkg_dir }}\installed\x64-windows-static"
+            if [[ -d "${{ env.vcpkg_dir }}/installed/x64-windows-static" ]]; then
+              echo "::notice title=vcpkg installed::Setting vcpkg env vars for OpenSSL in Windows"
+              export OPENSSL_DIR="${{ env.vcpkg_dir }}/installed/x64-windows-static"
+              export OPENSSL_STATIC="Yes"
+              export VCPKG_ROOT="${{ env.vcpkg_dir }}"
+            else
+              echo "::warning title=vcpkg not found::Missing OpenSSL Static, proceeding without it"
+            fi
           fi
           cargo test --no-run
         shell: bash
