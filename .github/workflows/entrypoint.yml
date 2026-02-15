@@ -9,7 +9,7 @@ env:
 
 jobs:
   release:
-    runs-on: thevickypedia-lite
+    runs-on: thevickypedia-default
     permissions:
       contents: write
 
@@ -233,7 +233,7 @@ jobs:
       - release
       - upload_assets
     if: needs.release.outputs.release-flag == 'true'
-    runs-on: thevickypedia-lite
+    runs-on: thevickypedia-default
     steps:
       - uses: actions/checkout@v4
       - name: Update Rust
