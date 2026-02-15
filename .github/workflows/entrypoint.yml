@@ -156,23 +156,28 @@ jobs:
       - name: Install OpenSSL static for Windows
         # https://github.com/sfackler/rust-openssl/issues/1086
         if: startsWith(matrix.platform.os, 'windows')
+        continue-on-error: true
         run: |
-          if (-Not (Test-Path -Path \Tools)) {
-            mkdir \Tools
+          if (-Not (Test-Path -Path $env:tools_dir)) {
+            mkdir $env:tools_dir
           }
-          cd \Tools
-          if (-Not (Test-Path -Path .\vcpkg)) {
-            git clone https://github.com/Microsoft/vcpkg.git
+          cd $env:tools_dir
+          if (-Not (Test-Path -Path $env:vcpkg_dir)) {
+            git clone https://github.com/Microsoft/vcpkg.git $env:vcpkg_dir
           }
-          cd vcpkg
+          cd $env:vcpkg_dir
           echo ("vcpkg_dir=" + $pwd) >> $env:GITHUB_ENV
           if (-Not (Test-Path -Path .\vcpkg.exe)) {
-            .\bootstrap-vcpkg.bat
+            .\bootstrap-vcpkg.bat -disableMetrics
           }
-          .\vcpkg.exe install openssl:x64-windows-static
+          .\vcpkg.exe install openssl:x64-windows-static --disable-metrics
         shell: pwsh
+        env:
+          tools_dir: "C:\\Tools"
+          vcpkg_dir: "C:\\Tools\\vcpkg"
 
       - name: Build
+        if: ${{ success() || failure() }}
         run: |
           if [[ "${{ matrix.platform.os }}" =~ ^windows ]]; then
             echo "Setting vcpkg env vars for OpenSSL in Windows"
@@ -182,6 +187,8 @@ jobs:
           fi
           cargo build --release
         shell: bash
+        env:
+          vcpkg_dir: "C:\Tools\vcpkg"
 
       - name: Run tests
         run: |
