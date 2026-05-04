@@ -54,10 +54,10 @@ jobs:
           
           if echo "$versions" | grep -qx "$current_version"; then
             echo "release=false" >> $GITHUB_ENV
-            echo "release_flag=false" >> "$GITHUB_OUTPUT"
+            echo "release_flag=false" >> $GITHUB_ENV
           else
             echo "release=true" >> $GITHUB_ENV
-            echo "release_flag=true" >> "$GITHUB_OUTPUT"
+            echo "release_flag=true" >> $GITHUB_ENV
           fi
           
           echo "pkg_version=$current_version" >> $GITHUB_ENV
@@ -82,13 +82,19 @@ jobs:
           
           if echo "$tags" | grep -qx "v$current_version"; then
             echo "release=false" >> $GITHUB_ENV
-            echo "release_flag=false" >> "$GITHUB_OUTPUT"
+            echo "release_flag=false" >> $GITHUB_ENV
           else
             echo "release=true" >> $GITHUB_ENV
-            echo "release_flag=true" >> "$GITHUB_OUTPUT"
+            echo "release_flag=true" >> $GITHUB_ENV
           fi
           
           echo "pkg_version=$current_version" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Set Release Flag
+        id: set-release-flag
+        run: |
+          echo "release_flag=${{ env.release_flag }}" >> "$GITHUB_OUTPUT"
         shell: bash
 
       - name: Create New Release
