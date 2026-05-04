@@ -33,6 +33,18 @@ on:
         required: false
         default: true
 
+    outputs:
+      release-flag:
+        value: ${{ jobs.release.outputs.release-flag }}
+      release-id:
+        value: ${{ jobs.release.outputs.release-id }}
+      release-tag:
+        value: ${{ jobs.release.outputs.release-tag }}
+      pkg-name:
+        value: ${{ jobs.release.outputs.pkg-name }}
+      bin-name:
+        value: ${{ jobs.release.outputs.bin-name }}
+
 env:
   CARGO_TERM_COLOR: always
 
