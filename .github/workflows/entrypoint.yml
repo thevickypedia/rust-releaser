@@ -159,66 +159,52 @@ jobs:
     needs: release
     runs-on: thevickypedia-default
     outputs:
-      build_linux_amd: ${{ steps.out.outputs.build_linux_amd }}
-      build_linux_arm: ${{ steps.out.outputs.build_linux_arm }}
-      build_macos_amd: ${{ steps.out.outputs.build_macos_amd }}
-      build_macos_arm: ${{ steps.out.outputs.build_macos_arm }}
-      build_windows_amd: ${{ steps.out.outputs.build_windows_amd }}
-      build_windows_arm: ${{ steps.out.outputs.build_windows_arm }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
-      - id: out
+      - name: Generate Matrix
+        id: matrix
         run: |
-          echo "build_linux_amd=${{ inputs.build_linux_amd }}" >> $GITHUB_OUTPUT
-          echo "build_linux_arm=${{ inputs.build_linux_arm }}" >> $GITHUB_OUTPUT
-          echo "build_macos_amd=${{ inputs.build_macos_amd }}" >> $GITHUB_OUTPUT
-          echo "build_macos_arm=${{ inputs.build_macos_arm }}" >> $GITHUB_OUTPUT
-          echo "build_windows_amd=${{ inputs.build_windows_amd }}" >> $GITHUB_OUTPUT
-          echo "build_windows_arm=${{ inputs.build_windows_arm }}" >> $GITHUB_OUTPUT
+          matrix=$(jq -n '
+            {
+              include: [
+                (if "${{ inputs.build_linux_amd }}" == "true" then
+                  {release_for:"Linux-x86_64", os:"linux-amd64", bin:"${{ needs.release.outputs.bin-name }}", name:"${{ needs.release.outputs.pkg-name }}-Linux-x86_64.tar.gz"}
+                else empty end),
+          
+                (if "${{ inputs.build_linux_arm }}" == "true" then
+                  {release_for:"Linux-arm64", os:"linux-arm64", bin:"${{ needs.release.outputs.bin-name }}", name:"${{ needs.release.outputs.pkg-name }}-Linux-arm64.tar.gz"}
+                else empty end),
+          
+                (if "${{ inputs.build_macos_amd }}" == "true" then
+                  {release_for:"macOS-x86_64", os:"darwin-amd64", bin:"${{ needs.release.outputs.bin-name }}", name:"${{ needs.release.outputs.pkg-name }}-Darwin-x86_64.tar.gz"}
+                else empty end),
+          
+                (if "${{ inputs.build_macos_arm }}" == "true" then
+                  {release_for:"macOS-arm64", os:"darwin-arm64", bin:"${{ needs.release.outputs.bin-name }}", name:"${{ needs.release.outputs.pkg-name }}-Darwin-arm64.tar.gz"}
+                else empty end),
+          
+                (if "${{ inputs.build_windows_amd }}" == "true" then
+                  {release_for:"Windows-x86_64", os:"windows-amd64", bin:"${{ needs.release.outputs.bin-name }}.exe", name:"${{ needs.release.outputs.pkg-name }}-Windows-x86_64.zip"}
+                else empty end),
+          
+                (if "${{ inputs.build_windows_arm }}" == "true" then
+                  {release_for:"Windows-arm64", os:"windows-arm64", bin:"${{ needs.release.outputs.bin-name }}.exe", name:"${{ needs.release.outputs.pkg-name }}-Windows-arm64.zip"}
+                else empty end)
+              ]
+            }
+          ')
+          
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+        shell: bash
 
   upload_assets:
     needs: [release, prep]
     strategy:
-      matrix:
-        platform:
-          - release_for: Linux-x86_64
-            os: linux-amd64
-            bin: ${{ needs.release.outputs.bin-name }}
-            name: ${{ needs.release.outputs.pkg-name }}-Linux-x86_64.tar.gz
-            enabled: ${{ needs.prep.outputs.build_linux_amd }}
+      matrix: ${{ fromJson(needs.prep.outputs.matrix) }}
 
-          - release_for: Linux-arm64
-            os: linux-arm64
-            bin: ${{ needs.release.outputs.bin-name }}
-            name: ${{ needs.release.outputs.pkg-name }}-Linux-arm64.tar.gz
-            enabled: ${{ needs.prep.outputs.build_linux_arm }}
-
-          - release_for: macOS-x86_64
-            os: darwin-amd64
-            bin: ${{ needs.release.outputs.bin-name }}
-            name: ${{ needs.release.outputs.pkg-name }}-Darwin-x86_64.tar.gz
-            enabled: ${{ needs.prep.outputs.build_macos_amd }}
-
-          - release_for: macOS-arm64
-            os: darwin-arm64
-            bin: ${{ needs.release.outputs.bin-name }}
-            name: ${{ needs.release.outputs.pkg-name }}-Darwin-arm64.tar.gz
-            enabled: ${{ needs.prep.outputs.build_macos_arm }}
-
-          - release_for: Windows-x86_64
-            os: windows-amd64
-            bin: ${{ needs.release.outputs.bin-name }}.exe
-            name: ${{ needs.release.outputs.pkg-name }}-Windows-x86_64.zip
-            enabled: ${{ needs.prep.outputs.build_windows_amd }}
-
-          - release_for: Windows-arm64
-            os: windows-arm64
-            bin: ${{ needs.release.outputs.bin-name }}.exe
-            name: ${{ needs.release.outputs.pkg-name }}-Windows-arm64.zip
-            enabled: ${{ needs.prep.outputs.build_windows_arm }}
-
-    name: Upload asset for ${{ matrix.platform.release_for }}
-    if: needs.release.outputs.release-flag == 'true' && matrix.platform.enabled == 'true'
-    runs-on: ${{ matrix.platform.os }}
+    name: Upload asset for ${{ matrix.release_for }}
+    if: needs.release.outputs.release-flag == 'true'
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: write
 
@@ -250,7 +236,7 @@ jobs:
 
       - name: Install OpenSSL static for Windows
         # https://github.com/sfackler/rust-openssl/issues/1086
-        if: startsWith(matrix.platform.os, 'windows')
+        if: contains(matrix.os, 'windows')
         continue-on-error: true
         run: |
           if (-Not (Test-Path -Path $env:tools_dir)) {
@@ -274,7 +260,7 @@ jobs:
       - name: Build
         if: always()
         run: |
-          if [[ "${{ matrix.platform.os }}" =~ ^windows ]]; then
+          if [[ "${{ matrix.os }}" =~ ^windows ]]; then
             if [[ -d "${{ env.vcpkg_dir }}/installed/x64-windows-static" ]]; then
               echo "::notice title=vcpkg installed::Setting vcpkg env vars for OpenSSL in Windows"
               export OPENSSL_DIR="${{ env.vcpkg_dir }}/installed/x64-windows-static"
@@ -289,7 +275,7 @@ jobs:
 
       - name: Run tests
         run: |
-          if [[ "${{ matrix.platform.os }}" =~ ^windows ]]; then
+          if [[ "${{ matrix.os }}" =~ ^windows ]]; then
             if [[ -d "${{ env.vcpkg_dir }}/installed/x64-windows-static" ]]; then
               echo "::notice title=vcpkg installed::Setting vcpkg env vars for OpenSSL in Windows"
               export OPENSSL_DIR="${{ env.vcpkg_dir }}/installed/x64-windows-static"
@@ -303,27 +289,27 @@ jobs:
         shell: bash
 
       - name: Compress and Copy Artifact (Windows)
-        if: startsWith(matrix.platform.os, 'windows')
+        if: contains(matrix.os, 'windows')
         run: |
           mkdir -p ${{ needs.release.outputs.pkg-name }}
-          cp target/release/${{ matrix.platform.bin }} ${{ needs.release.outputs.pkg-name }}/${{ matrix.platform.bin }}
-          Compress-Archive -DestinationPath ${{ matrix.platform.name }} -Path ${{ needs.release.outputs.pkg-name }}/
+          cp target/release/${{ matrix.bin }} ${{ needs.release.outputs.pkg-name }}/${{ matrix.bin }}
+          Compress-Archive -DestinationPath ${{ matrix.name }} -Path ${{ needs.release.outputs.pkg-name }}/
         shell: pwsh
 
       - name: Compress and Copy Artifact (macOS/Ubuntu)
-        if: "!startsWith(matrix.platform.os, 'windows')"
+        if: "!contains(matrix.os, 'windows')"
         run: |
           mkdir -p ${{ needs.release.outputs.pkg-name }}
-          cp target/release/${{ matrix.platform.bin }} ${{ needs.release.outputs.pkg-name }}/${{ matrix.platform.bin }}
-          tar -zcvf ${{ matrix.platform.name }} ${{ needs.release.outputs.pkg-name }}/
+          cp target/release/${{ matrix.bin }} ${{ needs.release.outputs.pkg-name }}/${{ matrix.bin }}
+          tar -zcvf ${{ matrix.name }} ${{ needs.release.outputs.pkg-name }}/
         shell: bash
 
       - name: Upload Asset to Release
         run: |
           curl -X POST -H "Authorization: token ${{ secrets.GIT_TOKEN }}" \
           -H "Content-Type: application/octet-stream" \
-          --data-binary @"${{ matrix.platform.name }}" \
-          "https://uploads.github.com/repos/${{ github.repository }}/releases/${{ needs.release.outputs.release-id }}/assets?name=${{ matrix.platform.name }}"
+          --data-binary @"${{ matrix.name }}" \
+          "https://uploads.github.com/repos/${{ github.repository }}/releases/${{ needs.release.outputs.release-id }}/assets?name=${{ matrix.name }}"
         shell: bash
 
       - name: Runtime Analyzer
@@ -331,8 +317,8 @@ jobs:
           start=${{ env.start_time }}
           end=$(date +%s)
           time_taken=$((end-start))
-          url="${{ github.server_url }}/${{ github.repository }}/releases/download/${{ needs.release.outputs.release-tag }}/${{ matrix.platform.name }}"
-          hyperlink="[${{ matrix.platform.release_for }}]($url)"
+          url="${{ github.server_url }}/${{ github.repository }}/releases/download/${{ needs.release.outputs.release-tag }}/${{ matrix.name }}"
+          hyperlink="[${{ matrix.release_for }}]($url)"
           echo "🚀 Built for $hyperlink in $time_taken seconds" >> $GITHUB_STEP_SUMMARY
         shell: bash
 
