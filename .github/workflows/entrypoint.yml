@@ -26,6 +26,7 @@ jobs:
       bin-name: ${{ steps.get-package-info.outputs.bin_name }}
     steps:
       - uses: actions/checkout@v4
+
       - name: Get Package Name
         id: get-package-info
         run: |
@@ -39,34 +40,57 @@ jobs:
           echo "bin_name=$bin_name" >> $GITHUB_ENV
           echo "bin_name=$bin_name" >> "$GITHUB_OUTPUT"
         shell: bash
-      - name: Set Release Flag  # Release flag is set only for a push on main branch
-        id: set-release-flag
+
+      - name: Set Release Flag (crates.io mode)
+        if: inputs.publish_crate
+        id: set-release-flag-crates
         run: |
           current_version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
-          # latest_version=$(curl -s https://crates.io/api/v1/crates/${{ env.pkg_name }} | jq -r '.versions[0].num')
-          versions=$(curl -s https://crates.io/api/v1/crates/${{ env.pkg_name }} | jq -r '.versions | map(.num)')
-          latest_version=$(echo $versions | jq -r '.[0]')
-          echo "Current Package Version: ${current_version}"
-          echo "Latest Package Version: $latest_version"
-          version_exists=false
-          for version in $(echo "$versions" | jq -r '.[]'); do
-            trimmed=$(echo "$version" | awk '{$1=$1};1')
-            if [ "$trimmed" == "$current_version" ]; then
-              version_exists=true
-              break
-            fi
-          done
-          if [ "$version_exists" = true ]; then
-            echo "Version $current_version exists in crates.io, setting release flag to 'false'"
+          
+          versions=$(curl -s https://crates.io/api/v1/crates/${{ env.pkg_name }} | jq -r '.versions[].num')
+          
+          echo "Current Package Version: $current_version"
+          echo "Crates.io Versions: $versions"
+          
+          if echo "$versions" | grep -qx "$current_version"; then
             echo "release=false" >> $GITHUB_ENV
             echo "release_flag=false" >> "$GITHUB_OUTPUT"
           else
-            echo "Version $current_version does not exist in crates.io, setting release flag to 'true'"
             echo "release=true" >> $GITHUB_ENV
             echo "release_flag=true" >> "$GITHUB_OUTPUT"
           fi
+          
           echo "pkg_version=$current_version" >> $GITHUB_ENV
         shell: bash
+
+      - name: Set Release Flag (GitHub Releases mode)
+        if: ${{ !inputs.publish_crate }}
+        id: set-release-flag-gh
+        run: |
+          current_version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
+          
+          echo "Current Package Version: $current_version"
+          
+          releases=$(curl -s \
+            "https://api.github.com/repos/${{ github.repository }}/releases?per_page=100" \
+            -H "Authorization: token ${{ secrets.GIT_TOKEN }}")
+          
+          tags=$(echo "$releases" | jq -r '.[].tag_name')
+          
+          echo "Existing GitHub release tags:"
+          echo "$tags"
+          
+          if echo "$tags" | grep -qx "v$current_version"; then
+            echo "release=false" >> $GITHUB_ENV
+            echo "release_flag=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=true" >> $GITHUB_ENV
+            echo "release_flag=true" >> "$GITHUB_OUTPUT"
+          fi
+          
+          echo "pkg_version=$current_version" >> $GITHUB_ENV
+        shell: bash
+
       - name: Create New Release
         if: env.release == 'true'
         id: create-release
