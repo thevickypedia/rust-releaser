@@ -3,6 +3,11 @@ name: Build, Test and Upload Artifact
 # https://docs.github.com/en/actions/sharing-automations/reusing-workflows#using-inputs-and-secrets-in-a-reusable-workflow
 on:
   workflow_call:
+    inputs:
+      publish_crate:
+        type: boolean
+        required: false
+        default: true
 
 env:
   CARGO_TERM_COLOR: always
@@ -250,7 +255,7 @@ jobs:
     needs:
       - release
       - upload_assets
-    if: needs.release.outputs.release-flag == 'true'
+    if: inputs.publish_crate == 'true' && needs.release.outputs.release-flag == 'true'
     runs-on: thevickypedia-default
     steps:
       - uses: actions/checkout@v4
