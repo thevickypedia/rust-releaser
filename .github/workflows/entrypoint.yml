@@ -196,7 +196,9 @@ jobs:
             }
           ')
           
-          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+          echo "matrix<<EOF" >> $GITHUB_OUTPUT
+          echo "$matrix" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
         shell: bash
 
   upload_assets:
