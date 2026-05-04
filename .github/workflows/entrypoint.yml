@@ -8,6 +8,30 @@ on:
         type: boolean
         required: false
         default: true
+      build_linux_amd:
+        type: boolean
+        required: false
+        default: true
+      build_linux_arm:
+        type: boolean
+        required: false
+        default: true
+      build_macos_amd:
+        type: boolean
+        required: false
+        default: true
+      build_macos_arm:
+        type: boolean
+        required: false
+        default: true
+      build_windows_amd:
+        type: boolean
+        required: false
+        default: true
+      build_windows_arm:
+        type: boolean
+        required: false
+        default: true
 
 env:
   CARGO_TERM_COLOR: always
@@ -131,8 +155,28 @@ jobs:
           echo "release_id=$release_id" >> "$GITHUB_OUTPUT"
         shell: bash
 
-  upload_assets:
+  prep:
     needs: release
+    runs-on: thevickypedia-default
+    outputs:
+      build_linux_amd: ${{ steps.out.outputs.build_linux_amd }}
+      build_linux_arm: ${{ steps.out.outputs.build_linux_arm }}
+      build_macos_amd: ${{ steps.out.outputs.build_macos_amd }}
+      build_macos_arm: ${{ steps.out.outputs.build_macos_arm }}
+      build_windows_amd: ${{ steps.out.outputs.build_windows_amd }}
+      build_windows_arm: ${{ steps.out.outputs.build_windows_arm }}
+    steps:
+      - id: out
+        run: |
+          echo "build_linux_amd=${{ inputs.build_linux_amd }}" >> $GITHUB_OUTPUT
+          echo "build_linux_arm=${{ inputs.build_linux_arm }}" >> $GITHUB_OUTPUT
+          echo "build_macos_amd=${{ inputs.build_macos_amd }}" >> $GITHUB_OUTPUT
+          echo "build_macos_arm=${{ inputs.build_macos_arm }}" >> $GITHUB_OUTPUT
+          echo "build_windows_amd=${{ inputs.build_windows_amd }}" >> $GITHUB_OUTPUT
+          echo "build_windows_arm=${{ inputs.build_windows_arm }}" >> $GITHUB_OUTPUT
+
+  upload_assets:
+    needs: [release, prep]
     strategy:
       matrix:
         platform:
@@ -140,29 +184,40 @@ jobs:
             os: linux-amd64
             bin: ${{ needs.release.outputs.bin-name }}
             name: ${{ needs.release.outputs.pkg-name }}-Linux-x86_64.tar.gz
+            enabled: ${{ needs.prep.outputs.build_linux_amd }}
 
           - release_for: Linux-arm64
             os: linux-arm64
             bin: ${{ needs.release.outputs.bin-name }}
             name: ${{ needs.release.outputs.pkg-name }}-Linux-arm64.tar.gz
-
-          - release_for: Windows-x86_64
-            os: windows-amd64
-            bin: ${{ needs.release.outputs.bin-name }}.exe
-            name: ${{ needs.release.outputs.pkg-name }}-Windows-x86_64.zip
+            enabled: ${{ needs.prep.outputs.build_linux_arm }}
 
           - release_for: macOS-x86_64
             os: darwin-amd64
             bin: ${{ needs.release.outputs.bin-name }}
             name: ${{ needs.release.outputs.pkg-name }}-Darwin-x86_64.tar.gz
+            enabled: ${{ needs.prep.outputs.build_macos_amd }}
 
           - release_for: macOS-arm64
             os: darwin-arm64
             bin: ${{ needs.release.outputs.bin-name }}
             name: ${{ needs.release.outputs.pkg-name }}-Darwin-arm64.tar.gz
+            enabled: ${{ needs.prep.outputs.build_macos_arm }}
+
+          - release_for: Windows-x86_64
+            os: windows-amd64
+            bin: ${{ needs.release.outputs.bin-name }}.exe
+            name: ${{ needs.release.outputs.pkg-name }}-Windows-x86_64.zip
+            enabled: ${{ needs.prep.outputs.build_windows_amd }}
+
+          - release_for: Windows-arm64
+            os: windows-arm64
+            bin: ${{ needs.release.outputs.bin-name }}.exe
+            name: ${{ needs.release.outputs.pkg-name }}-Windows-arm64.zip
+            enabled: ${{ needs.prep.outputs.build_windows_arm }}
 
     name: Upload asset for ${{ matrix.platform.release_for }}
-    if: needs.release.outputs.release-flag == 'true'
+    if: needs.release.outputs.release-flag == 'true' && matrix.platform.enabled == 'true'
     runs-on: ${{ matrix.platform.os }}
     permissions:
       contents: write
