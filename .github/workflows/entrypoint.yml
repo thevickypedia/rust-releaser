@@ -164,6 +164,7 @@ jobs:
       matrix: ${{ steps.matrix.outputs.matrix }}
     steps:
       - name: Generate Matrix
+        if: needs.release.outputs.release-flag == 'true'
         id: matrix
         run: |
           matrix=$(jq -n '
