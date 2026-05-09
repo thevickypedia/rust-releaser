@@ -343,7 +343,7 @@ jobs:
     needs:
       - release
       - upload_assets
-    if: inputs.publish_crate == 'true' && needs.release.outputs.release-flag == 'true'
+    if: ${{ inputs.publish_crate && needs.release.outputs.release-flag == 'true' }}
     runs-on: thevickypedia-default
     steps:
       - uses: actions/checkout@v4
