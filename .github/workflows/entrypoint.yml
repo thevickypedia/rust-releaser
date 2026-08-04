@@ -83,7 +83,7 @@ jobs:
         run: |
           current_version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
           
-          versions=$(curl -s https://crates.io/api/v1/crates/${{ env.pkg_name }} | jq -r '.versions[].num')
+          versions=$(curl -s -A "${{ env.pkg_name }} (41898282+github-actions[bot]@users.noreply.github.com)" https://crates.io/api/v1/crates/${{ env.pkg_name }} | jq -r '.versions[].num')
           
           echo "Current Package Version: $current_version"
           echo "Crates.io Versions: $versions"
@@ -149,7 +149,7 @@ jobs:
           done
 
           echo "Release Tag: $release_tag"
-          latest_tag=$(curl -s -L https://api.github.com/repos/${{ github.repository }}/releases/latest | jq -r .tag_name)
+          latest_tag=$(curl -H "Authorization: token ${{ secrets.GIT_TOKEN }}" -s -L https://api.github.com/repos/${{ github.repository }}/releases/latest | jq -r .tag_name)
           commit_msg="$(git log -1 --pretty=%B | sed ':a;N;$!ba;s/\n/\\n/g')"
           commit_msg+="\n**Full Changelog**: ${{ github.server_url }}/${{ github.repository }}/compare/$latest_tag...$release_tag"
           release_data="{\"tag_name\":\"$release_tag\",\"name\":\"$release_tag\",\"body\":\"$commit_msg\",\"draft\":false,\"prerelease\":$prerelease}"
